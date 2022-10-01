@@ -3,6 +3,8 @@
   <canvas ref="canvas"></canvas>
 </template>
 
+
+
 <script lang="ts" setup>
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import {
@@ -19,12 +21,18 @@ import {
   DirectionalLight,
   MeshPhongMaterial,
   AmbientLight,
-  SphereGeometry
+  SphereGeometry,
+  BufferGeometry,
+  Line,
+  LineBasicMaterial,
+  Vector3
 } from 'three'
 import { getSatelliteInfo } from 'tle.js'
 
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+
+
 
 let info = getSatelliteInfo(`ISS (ZARYA)             
 1 25544U 98067A   22274.46188292  .00014869  00000+0  26380-3 0  9996
@@ -34,6 +42,10 @@ console.log(info)
 
 let canvas = ref<HTMLCanvasElement | null>();
 let out = ref<HTMLElement | null>()
+
+  const material = new LineBasicMaterial({
+	color: 0x0000ff
+});
 
 var scene = new Scene();
 var camera = new PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 1, 50000 );
@@ -54,7 +66,7 @@ let light = new DirectionalLight(0xffffff, 5)
 
 //scene.add(light)
 camera.add(light)
-light.position.set(10000, 10000, -9000)
+light.position.set(10000, 10000, 10000)
 light.lookAt(0, 0, 0)
 
 let whatLight = new AmbientLight(0xffffff, 3.2)
@@ -89,11 +101,11 @@ main().catch(err => {
   console.error('Failed in main', err)
 })
 
+
 let fakePlanet = new SphereGeometry(12742, 20, 20)
 let planetMat = new MeshPhongMaterial({ color: 0x93dccc })
 let fakePlanetNode = new Mesh(fakePlanet, planetMat)
 //scene.add(fakePlanetNode)
-
 camera.position.z = -9000;
 ctrls.update()
 
@@ -108,30 +120,42 @@ var animate = function () {
     ship.rotation.x += 0.001;
     ship.rotation.y += 0.001;
 
-    // let when = start + (new Date().getTime() - start) * 100
+    let when = start + (new Date().getTime() - start) * 100
 
-    // let info = getSatelliteInfo(`ISS (ZARYA)             
-    //   1 25544U 98067A   22274.46188292  .00014869  00000+0  26380-3 0  9996
-    //   2 25544  51.6447 170.0519 0002623 316.7478 215.0466 15.50450812361668`,
-    //   when,
-    //   -83,
-    //   42,
-    //   800
-    // )
+    let info = getSatelliteInfo(`ISS (ZARYA)             
+      1 25544U 98067A   22274.46188292  .00014869  00000+0  26380-3 0  9996
+      2 25544  51.6447 170.0519 0002623 316.7478 215.0466 15.50450812361668`,
+      when,
+      -83,
+      42,
+      800
+    )
 
-    // if (out.value) out.value.innerText = JSON.stringify(info, null, 2)
+    if (out.value) out.value.innerText = JSON.stringify(info, null, 2)
 
-    // let lat = info.lat * Math.PI / 180
-    // let lon = info.lng * Math.PI / 180
+    let lat = info.lat * Math.PI / 180
+    let lon = info.lng * Math.PI / 180
 
-    // ship.position.set(
-    //   (12742/2 + info.height) * -Math.sin(lon) * Math.cos(lat),
+    ship.position.set(
+      (12742/2 + info.height) * -Math.sin(lon) * Math.cos(lat),
       
-    //   (12742/2 + info.height) * Math.sin(lat),
-    //   (12742/2 + info.height) * -Math.cos(lon) * Math.cos(lat),
-    // )
+      (12742/2 + info.height) * Math.sin(lat),
+      (12742/2 + info.height) * -Math.cos(lon) * Math.cos(lat),
+    )
 
   }
+
+  const points = [];
+points.push( new Vector3( - 10, 0, 0 ) );
+points.push( new Vector3( 0, 10, 0 ) );
+points.push( new Vector3( 10, 0, 0 ) );
+
+const geometry = new BufferGeometry().setFromPoints( points );
+
+const line = new Line( geometry, material );
+
+scene.add( line );
+
 
 	renderer.render( scene, camera );
 };

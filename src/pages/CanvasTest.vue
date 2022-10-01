@@ -19,12 +19,14 @@ import {
   DirectionalLight,
   MeshPhongMaterial,
   AmbientLight,
-  SphereGeometry
+  SphereGeometry,
+  Vector3,
 } from 'three'
 import { getSatelliteInfo } from 'tle.js'
 
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 
 let info = getSatelliteInfo(`ISS (ZARYA)             
 1 25544U 98067A   22274.46188292  .00014869  00000+0  26380-3 0  9996
@@ -36,7 +38,7 @@ let canvas = ref<HTMLCanvasElement | null>();
 let out = ref<HTMLElement | null>()
 
 var scene = new Scene();
-var camera = new PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 1, 50000 );
+var camera = new PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 1, 1000000 );
 
 var renderer = new WebGLRenderer();
 watch(() => canvas.value, () => canvas.value && (renderer.domElement = canvas.value))
@@ -48,56 +50,61 @@ onMounted(() => {
   canvas.value = renderer.domElement
 })
 
+//const loader = new GLTFLoader();
+
 const loader = new GLTFLoader();
+let dl = new DRACOLoader
+dl.setDecoderPath('/assets/draco/');
+dl.preload();
+loader.setDRACOLoader(dl)
+let light = new DirectionalLight(0xffffff, 2)
 
-let light = new DirectionalLight(0xffffff, 10)
-
-//scene.add(light)
-camera.add(light)
+scene.add(light)
+//camera.add(light)
 light.position.set(10000, 10000, 10000)
 light.lookAt(0, 0, 0)
 
-let whatLight = new AmbientLight(0xffffff, 1)
-scene.add(whatLight)
-
-let ship: Group, planet: Group
+let system: Group, ship: Group, planet: Group
 let issTle: string
 
 async function main() {
-  let tleData: string
+  let tleData: any
   
   [
     { scene: ship },
     { scene: planet },
     tleData
   ] = await Promise.all([
-    loader.loadAsync('/assets/models/ISS_stationary.glb'),
-    loader.loadAsync('/assets/models/Earth_1_12756.glb'),
-    fetch('https://celestrak.org/NORAD/elements/stations.txt', {
-      mode: 'no-cors'
-    }).then(res => res.text())
+    // loader.loadAsync('ISS_stationary_lo.glb'),
+    // loader.loadAsync('Earth_1_12756.glb'),
+     loader.loadAsync('/assets/models/ISS_stationary_lo.glb'),
+     loader.loadAsync('/assets/models/Earth_1_12756.glb'),
+    
+    // 25544 = ISS (Zarya)
+    fetch('https://tle.ivanstanojevic.me/api/tle/25544').then(res => res.json())
   ])
 
+  let whatLight = new AmbientLight(0xffffff, 1)
+  scene.add(whatLight)
+
+  system = new Group()
+
+  //ship.scale.set(5, 5, 5)
+  //ship.position(new Vector3(planet.position.x, planet.position.y, planet.position.z))
+  //scene.add(ship)
+  //planet.attach(ship);
   ship.scale.set(5, 5, 5)
-  scene.add(ship)
-  scene.add(planet)
+  //planet.attach(whatLight);
+  //planet.add(ship)
+  scene.add(system)
+  system.attach(ship)
+  system.attach(planet)
 
-  let what = new Box3
-  what.setFromObject(planet)
-  console.log(what)
-
+  // Earth = 12,742 km diameter, model = 1000 km diameter
   let scale = 12742/1000
   planet.scale.set(scale, scale, scale)
 
-  let tles = []
-  let lines = tleData.split(/\r?\n/)
-  for (let i = 0; i < lines.length; i+=3) {
-    tles.push(lines.slice(i, i + 3).join('\n'))
-  }
-
-  debugger
-  issTle = tles.find(tle => tle.includes('ZARYA')) ?? ''
-  console.log(issTle)
+  issTle = `${tleData.name}\n${tleData.line1}\n${tleData.line2}`
 }
 
 main().catch(err => {
@@ -122,32 +129,40 @@ var animate = function () {
   if (ship) {
     ship.rotation.x += 0.001;
     ship.rotation.y += 0.001;
+    system.rotation.y += 0.01;
 
     let when = start + (new Date().getTime() - start) * 100
 
-    let info = getSatelliteInfo(issTle,
-      when,
-      -83,
-      42,
-      800
-    )
+    
 
     if (out.value) out.value.innerText = JSON.stringify(info, null, 2)
 
-    let lat = info.lat * Math.PI / 180
-    let lon = info.lng * Math.PI / 180
 
-    ship.position.set(
-      (12742/2 + info.height) * -Math.sin(lon) * Math.cos(lat),
-      
-      (12742/2 + info.height) * Math.sin(lat),
-      (12742/2 + info.height) * -Math.cos(lon) * Math.cos(lat),
-    )
+    ship.position.copy(getTleXyz(issTle, when))
 
   }
 
 	renderer.render( scene, camera );
 };
+
+function getTleXyz(tle: string, when: number): Vector3 {
+
+  let info = getSatelliteInfo(tle,
+    when,
+    -83,
+    42,
+    800
+  )
+
+  let lat = info.lat * Math.PI / 180
+  let lon = info.lng * Math.PI / 180
+
+  return new Vector3(
+    (12742/2 + info.height) * -Math.sin(lon) * Math.cos(lat),
+    (12742/2 + info.height) * Math.sin(lat),
+    (12742/2 + info.height) * -Math.cos(lon) * Math.cos(lat),
+  )
+}
 
 animate();
 
@@ -188,9 +203,14 @@ canvas {
 pre {
   position: absolute;
   top: 0;
-  left: 0;
+  left: -28rem;
   background: white;
   width: 30rem;
   height: 14rem;
+  transition: left 300ms ease;
+
+  &:hover {
+    left: 0;
+  }
 }
 </style>
