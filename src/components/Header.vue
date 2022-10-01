@@ -2,7 +2,8 @@
     <div class="header">
     <link rel="icon" href="/public/icons/earth.ico" type="image/x-icon">
     <h1>Just The Ducks</h1>
-      <img src="/public/icons/earth.ico"/>
+      <!-- <img src="/public/icons/earth.ico"/> -->
+      <div class="earth"></div>
       <div class="nav">
         <router-link to="/">Home</router-link>
       </div>
@@ -18,5 +19,5 @@
         width: 100%;
         height: 50px;
         background-color: black;
-    }
+      }
 </style>

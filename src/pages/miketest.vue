@@ -17,10 +17,13 @@ import {
   SpotLight,
   DirectionalLight,
   MeshPhongMaterial,
-  AmbientLight
+  AmbientLight,
+  SphereGeometry
 } from 'three'
+import { getSatelliteInfo } from 'tle.js'
 
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 let canvas = ref<HTMLCanvasElement | null>();
 
@@ -30,11 +33,11 @@ var camera = new PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.
 var renderer = new WebGLRenderer();
 watch(() => canvas.value, () => canvas.value && (renderer.domElement = canvas.value))
 renderer.setSize( window.innerWidth, window.innerHeight );
-//document.body.appendChild( renderer.domElement );
-//canvas.value?.replaceWith(renderer.domElement)
+let ctrls = new OrbitControls(camera, renderer.domElement)
 onMounted(() => {
   console.log(canvas.value)
   canvas.value?.replaceWith(renderer.domElement)
+  canvas.value = renderer.domElement
 })
 
 const loader = new GLTFLoader();
@@ -50,11 +53,12 @@ scene.add(whatLight)
 
 let ship: Group
 
-
 loader.load( '/assets/models/ISS_stationary.glb', function ( gltf ) {
 
   console.log('loaded')
 	scene.add( ship = gltf.scene );
+
+  ship.position.set(100, 100, 100)
 
 }, undefined, function ( error ) {
 
@@ -62,11 +66,20 @@ loader.load( '/assets/models/ISS_stationary.glb', function ( gltf ) {
 
 } );
 
-
-loader.load('/assets/models/EarthClouds_1_12756.glb', function ( gltf ) {
+loader.load( 'assets/models/Earth_1_12756.glb', function ( gltf ) {
 
 console.log('loaded')
 scene.add( ship = gltf.scene );
+
+ship.position.set(
+  (12742 + info.height) * Math.sin(info.lng) * Math.cos(info.lat),
+  (12742 + info.height) * -Math.cos(info.lng) * Math.cos(info.lat),
+  (12742 + info.height) * Math.sin(info.lat)
+)
+
+ship.scale.set(100, 100, 100)
+
+console.log(ship.position)
 
 }, undefined, function ( error ) {
 
@@ -74,8 +87,13 @@ console.error( error );
 
 } );
 
+let fakePlanet = new SphereGeometry(10, 20, 20)
+let planetMat = new MeshPhongMaterial({ color: 0x93dccc })
+let fakePlanetNode = new Mesh(fakePlanet, planetMat)
+scene.add(fakePlanetNode)
 
 camera.position.z = 80;
+ctrls.update()
 
 var animate = function () {
 	requestAnimationFrame( animate );
@@ -93,7 +111,13 @@ animate();
 // Sizing things
 function onResize() {
   if (canvas.value) {
-    renderer.setSize(canvas.value.clientWidth, canvas.value.clientHeight)
+    console.log(canvas.value)
+    canvas.value.width = innerWidth
+    canvas.value.height = innerHeight
+    renderer.setSize(canvas.value.width, canvas.value.height)
+    camera.aspect = innerWidth / innerHeight
+    camera.updateProjectionMatrix()
+    
   }
 }
 onResize()
@@ -112,7 +136,7 @@ onUnmounted(() => removeEventListener('resize', onResize))
 
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 canvas {
   height: 100%;
   width: 100%;

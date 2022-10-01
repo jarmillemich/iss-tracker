@@ -52,8 +52,9 @@ const loader = new GLTFLoader();
 
 let light = new DirectionalLight(0xffffff, 4)
 
-scene.add(light)
-light.position.set(10000, 10000, 10000)
+//scene.add(light)
+camera.add(light)
+light.position.set(0, 10000, 10000)
 light.lookAt(0, 0, 0)
 
 let whatLight = new AmbientLight(0xffffff, 1)

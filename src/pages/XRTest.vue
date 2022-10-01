@@ -69,48 +69,21 @@ async function activateXR() {
     const camera = new PerspectiveCamera();
     camera.matrixAutoUpdate = false;
 
-    if(navigator.xr){
+    if(navigator.xr && gl)
+    {
         // Initialize a WebXR session using "immersive-ar".
-        const session = await navigator.xr.requestSession("immersive-ar");
+        const session:any = await navigator.xr.requestSession("immersive-ar");
         session.updateRenderState({
         baseLayer: new XRWebGLLayer(session, gl)
         });
-    }
 
-    // A 'local' reference space has a native origin that is located
-    // near the viewer's position at the time the session was created.
-    const referenceSpace = await session.requestReferenceSpace('local');
+        // A 'local' reference space has a native origin that is located
+        // near the viewer's position at the time the session was created.
+        const referenceSpace = await session.requestReferenceSpace('local');
+    }
 }
 
 
 
-//let q = new XRView()
-// function getXR(usePolyfill) {
-//   let tempXR;
-
-//   switch(usePolyfill) {
-//     case "if-needed":
-//       tempXR = navigator.xr;
-//       if (!tempXR) {
-//         webxrPolyfill = new WebXRPolyfill();
-//         tempXR = webxrPolyfill;
-//       }
-//       break;
-//     case "yes":
-//       webxrPolyfill = new WebXRPolyfill();
-//       tempXR = webxrPolyfill;
-//       break;
-//     case "no":
-//     default:
-//       tempXR = navigator.xr;
-//       break;
-//   }
-
-//   return tempXR;
-// }
-
-// const nativeXr = getXR("no");  // Get the native XRSystem object
-// const polyfilledXr = getXR("yes"); // Always returns an XRSystem from the polyfill
-// const xr = getXR("if-needed");
 
 </script>
