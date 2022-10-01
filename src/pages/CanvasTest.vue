@@ -17,21 +17,27 @@ import {
   SpotLight,
   DirectionalLight,
   MeshPhongMaterial,
-  AmbientLight
+  AmbientLight,
+  SphereGeometry
 } from 'three'
+import { getSatelliteInfo } from 'tle.js'
 
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+
+let info = getSatelliteInfo(`ISS (ZARYA)             
+1 25544U 98067A   22274.46188292  .00014869  00000+0  26380-3 0  9996
+2 25544  51.6447 170.0519 0002623 316.7478 215.0466 15.50450812361668`, new Date().getTime(), -83, 42, 800)
 
 let canvas = ref<HTMLCanvasElement | null>();
 
 var scene = new Scene();
-var camera = new PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+var camera = new PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 1, 50000 );
 
 var renderer = new WebGLRenderer();
 watch(() => canvas.value, () => canvas.value && (renderer.domElement = canvas.value))
 renderer.setSize( window.innerWidth, window.innerHeight );
-//document.body.appendChild( renderer.domElement );
-//canvas.value?.replaceWith(renderer.domElement)
+let ctrls = new OrbitControls(camera, renderer.domElement)
 onMounted(() => {
   console.log(canvas.value)
   canvas.value?.replaceWith(renderer.domElement)
@@ -43,7 +49,7 @@ const loader = new GLTFLoader();
 let light = new DirectionalLight(0xffffff, 1)
 
 scene.add(light)
-light.position.set(100, 100, 100)
+light.position.set(10000, 10000, 10000)
 light.lookAt(0, 0, 0)
 
 let whatLight = new AmbientLight(0xffffff, 0.5)
@@ -51,20 +57,37 @@ scene.add(whatLight)
 
 let ship: Group
 
-loader.load( '/assets/models/ISS_stationary.glb', function ( gltf ) {
+async function main() {
+  let [
+    { scene: ship },
+    { scene: planet }
+  ] = await Promise.all([
+    loader.loadAsync('/assets/models/ISS_stationary.glb'),
+    loader.loadAsync('/assets/models/Earth_1_12756.glb'),
+  ])
 
-  console.log('loaded')
-	scene.add( ship = gltf.scene );
+  ship.scale.set(100, 100, 100)
+  scene.add(ship)
+  scene.add(planet)
 
-}, undefined, function ( error ) {
+  ship.position.set(
+    (12742 + info.height) * Math.sin(info.lng) * Math.cos(info.lat),
+    (12742 + info.height) * -Math.cos(info.lng) * Math.cos(info.lat),
+    (12742 + info.height) * Math.sin(info.lat)
+  )
+}
 
-	console.error( error );
+main().catch(err => {
+  console.error('Failed in main', err)
+})
 
-} );
+let fakePlanet = new SphereGeometry(12742, 20, 20)
+let planetMat = new MeshPhongMaterial({ color: 0x93dccc })
+let fakePlanetNode = new Mesh(fakePlanet, planetMat)
+scene.add(fakePlanetNode)
 
-
-
-camera.position.z = 80;
+camera.position.z = 15000;
+ctrls.update()
 
 var animate = function () {
 	requestAnimationFrame( animate );
