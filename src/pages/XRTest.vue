@@ -1,6 +1,7 @@
 <p>Hello World!!n dfkvnjks;fkjgadjkfglksdhflghjk</p>
 <template>
-    <canvas ref="canvas"></canvas>
+    <button id="xr-button"></button>
+
 </template>
 <script lang="ts" setup>
 import { ref, watch, onMounted, onUnmounted } from 'vue'
@@ -31,59 +32,50 @@ onMounted(() => {
 
 })
 
-async function activateXR() {
-    // Add a canvas element and initialize a WebGL context that is compatible with WebXR.
-    const canvas = document.createElement("canvas");
-    document.body.appendChild(canvas);
-    const gl = canvas.getContext("webgl", {xrCompatible: true});
+let sessionSupported:boolean
+let xrButton:HTMLElement|null
 
-    const scene = new Scene();
+async function checkXR() {
+  xrButton= document.getElementById('xr-button')
 
-    // The cube will have a different color on each side.
-    const materials = [
-        new MeshBasicMaterial({color: 0xff0000}),
-        new MeshBasicMaterial({color: 0x0000ff}),
-        new MeshBasicMaterial({color: 0x00ff00}),
-        new MeshBasicMaterial({color: 0xff00ff}),
-        new MeshBasicMaterial({color: 0x00ffff}),
-        new MeshBasicMaterial({color: 0xffff00})
-    ];
-
-    // Create the cube and add it to the demo scene.
-    const cube = new Mesh(new BoxGeometry(0.2, 0.2, 0.2), materials);
-    cube.position.set(1, 1, 1);
-    scene.add(cube);
-
-    // Set up the WebGLRenderer, which handles rendering to the session's base layer.
-    const renderer = new WebGLRenderer({
-    alpha: true,
-    preserveDrawingBuffer: true,
-    canvas: canvas,
-    //context: gl
-    });
-    renderer.autoClear = false;
-
-    // The API directly updates the camera matrices.
-    // Disable matrix auto updates so three.js doesn't attempt
-    // to handle the matrices independently.
-    const camera = new PerspectiveCamera();
-    camera.matrixAutoUpdate = false;
-
-    if(navigator.xr && gl)
-    {
-        // Initialize a WebXR session using "immersive-ar".
-        const session:any = await navigator.xr.requestSession("immersive-ar");
-        session.updateRenderState({
-        baseLayer: new XRWebGLLayer(session, gl)
-        });
-
-        // A 'local' reference space has a native origin that is located
-        // near the viewer's position at the time the session was created.
-        const referenceSpace = await session.requestReferenceSpace('local');
-    }
+  if (navigator.xr) {
+    await checkSupportedState();
+    return sessionSupported;
+  }
 }
 
-
-
-
+function checkSupportedState() {
+  return new Promise<void>((resolve, reject) => {
+    if(!navigator.xr)
+        throw new Error("navigator.xr not supported");
+    
+    
+        navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
+        
+            if(!xrButton)
+                throw new Error("xr button not found")
+            if (supported) {
+                xrButton.innerHTML = 'Enter AR'
+                sessionSupported = true;
+                resolve();
+            }else{
+                xrButton.innerHTML = 'AR not found'
+            }
+        })
+  });
+}
+function onButtonClicked() {
+  if (!XRSession) {
+    if(!navigator.xr){
+    navigator.xr.requestSession('immersive-ar', {
+      optionalFeatures: ['dom-overlay'],
+      requiredFeatures: ['local', 'hit-test'],
+      domOverlay: {root: document.getElementById('app')},
+    }).then(session => onSessionStarted(session), onRequestSessionError)
+    } 
+} 
+//   else {
+//     XRSession.end()
+//   }
+}
 </script>

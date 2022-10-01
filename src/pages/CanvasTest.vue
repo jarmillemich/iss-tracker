@@ -50,25 +50,32 @@ onMounted(() => {
 
 const loader = new GLTFLoader();
 
-let light = new DirectionalLight(0xffffff, 4)
+let light = new DirectionalLight(0xffffff, 10)
 
 //scene.add(light)
 camera.add(light)
-light.position.set(0, 10000, 10000)
+light.position.set(10000, 10000, 10000)
 light.lookAt(0, 0, 0)
 
 let whatLight = new AmbientLight(0xffffff, 1)
 scene.add(whatLight)
 
 let ship: Group, planet: Group
+let issTle: string
 
 async function main() {
+  let tleData: string
+  
   [
     { scene: ship },
-    { scene: planet }
+    { scene: planet },
+    tleData
   ] = await Promise.all([
     loader.loadAsync('/assets/models/ISS_stationary.glb'),
     loader.loadAsync('/assets/models/Earth_1_12756.glb'),
+    fetch('https://celestrak.org/NORAD/elements/stations.txt', {
+      mode: 'no-cors'
+    }).then(res => res.text())
   ])
 
   ship.scale.set(5, 5, 5)
@@ -82,7 +89,15 @@ async function main() {
   let scale = 12742/1000
   planet.scale.set(scale, scale, scale)
 
-  
+  let tles = []
+  let lines = tleData.split(/\r?\n/)
+  for (let i = 0; i < lines.length; i+=3) {
+    tles.push(lines.slice(i, i + 3).join('\n'))
+  }
+
+  debugger
+  issTle = tles.find(tle => tle.includes('ZARYA')) ?? ''
+  console.log(issTle)
 }
 
 main().catch(err => {
@@ -102,15 +117,15 @@ let start = new Date().getTime()
 var animate = function () {
 	requestAnimationFrame( animate );
 
+  light.lookAt(0, 0, 0)
+
   if (ship) {
     ship.rotation.x += 0.001;
     ship.rotation.y += 0.001;
 
     let when = start + (new Date().getTime() - start) * 100
 
-    let info = getSatelliteInfo(`ISS (ZARYA)             
-      1 25544U 98067A   22274.46188292  .00014869  00000+0  26380-3 0  9996
-      2 25544  51.6447 170.0519 0002623 316.7478 215.0466 15.50450812361668`,
+    let info = getSatelliteInfo(issTle,
       when,
       -83,
       42,

@@ -1,4 +1,5 @@
 <template>
+  <pre ref="out"></pre>
   <canvas ref="canvas"></canvas>
 </template>
 
@@ -25,10 +26,17 @@ import { getSatelliteInfo } from 'tle.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
+let info = getSatelliteInfo(`ISS (ZARYA)             
+1 25544U 98067A   22274.46188292  .00014869  00000+0  26380-3 0  9996
+2 25544  51.6447 170.0519 0002623 316.7478 215.0466 15.50450812361668`, new Date().getTime(), -83, 42, 800)
+
+console.log(info)
+
 let canvas = ref<HTMLCanvasElement | null>();
+let out = ref<HTMLElement | null>()
 
 var scene = new Scene();
-var camera = new PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+var camera = new PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 1, 50000 );
 
 var renderer = new WebGLRenderer();
 watch(() => canvas.value, () => canvas.value && (renderer.domElement = canvas.value))
@@ -42,65 +50,87 @@ onMounted(() => {
 
 const loader = new GLTFLoader();
 
-let light = new DirectionalLight(0xffffff, 1)
+let light = new DirectionalLight(0xffffff, 5)
 
-scene.add(light)
-light.position.set(100, 100, 100)
+//scene.add(light)
+camera.add(light)
+light.position.set(10000, 10000, -9000)
 light.lookAt(0, 0, 0)
 
-let whatLight = new AmbientLight(0xffffff, 0.5)
+let whatLight = new AmbientLight(0xffffff, 3.2)
 scene.add(whatLight)
 
-let ship: Group
+let ship: Group, planet: Group
 
-loader.load( '/assets/models/ISS_stationary.glb', function ( gltf ) {
+async function main() {
+  [
+    { scene: ship },
+    { scene: planet }
+  ] = await Promise.all([
+    loader.loadAsync('/assets/models/ISS_stationary.glb'),
+    loader.loadAsync('/assets/models/Earth_1_12756.glb'),
+  ])
 
-  console.log('loaded')
-	scene.add( ship = gltf.scene );
+  ship.scale.set(5, 5, 5)
+  scene.add(ship)
+  scene.add(planet)
 
-  ship.position.set(100, 100, 100)
+  let what = new Box3
+  what.setFromObject(planet)
+  console.log(what)
 
-}, undefined, function ( error ) {
+  let scale = 12742/1000
+  planet.scale.set(scale, scale, scale)
 
-	console.error( error );
+  
+}
 
-} );
+main().catch(err => {
+  console.error('Failed in main', err)
+})
 
-loader.load( 'assets/models/Earth_1_12756.glb', function ( gltf ) {
-
-console.log('loaded')
-scene.add( ship = gltf.scene );
-
-ship.position.set(
-  (12742 + info.height) * Math.sin(info.lng) * Math.cos(info.lat),
-  (12742 + info.height) * -Math.cos(info.lng) * Math.cos(info.lat),
-  (12742 + info.height) * Math.sin(info.lat)
-)
-
-ship.scale.set(100, 100, 100)
-
-console.log(ship.position)
-
-}, undefined, function ( error ) {
-
-console.error( error );
-
-} );
-
-let fakePlanet = new SphereGeometry(10, 20, 20)
+let fakePlanet = new SphereGeometry(12742, 20, 20)
 let planetMat = new MeshPhongMaterial({ color: 0x93dccc })
 let fakePlanetNode = new Mesh(fakePlanet, planetMat)
-scene.add(fakePlanetNode)
+//scene.add(fakePlanetNode)
 
-camera.position.z = 80;
+camera.position.z = -9000;
 ctrls.update()
+
+let start = new Date().getTime()
 
 var animate = function () {
 	requestAnimationFrame( animate );
 
+  light.lookAt(0, 0, 0)
+
   if (ship) {
     ship.rotation.x += 0.001;
     ship.rotation.y += 0.001;
+
+    // let when = start + (new Date().getTime() - start) * 100
+
+    // let info = getSatelliteInfo(`ISS (ZARYA)             
+    //   1 25544U 98067A   22274.46188292  .00014869  00000+0  26380-3 0  9996
+    //   2 25544  51.6447 170.0519 0002623 316.7478 215.0466 15.50450812361668`,
+    //   when,
+    //   -83,
+    //   42,
+    //   800
+    // )
+
+    // if (out.value) out.value.innerText = JSON.stringify(info, null, 2)
+
+    // let lat = info.lat * Math.PI / 180
+    // let lon = info.lng * Math.PI / 180
+
+    // ship.position.set(
+    //   (12742/2 + info.height) * -Math.sin(lon) * Math.cos(lat),
+      
+    //   (12742/2 + info.height) * Math.sin(lat),
+    //   (12742/2 + info.height) * -Math.cos(lon) * Math.cos(lat),
+    // )
+
   }
 
 	renderer.render( scene, camera );
@@ -123,7 +153,6 @@ function onResize() {
 onResize()
 
 addEventListener('wheel', (evt: WheelEvent) => {
-  console.log(evt)
   if (evt.deltaY > 0) {
     camera.position.z *= 1.1
   } else if (evt.deltaY < 0) {
@@ -141,5 +170,14 @@ canvas {
   height: 100%;
   width: 100%;
   background: mediumaquamarine;
+}
+
+pre {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: white;
+  width: 30rem;
+  height: 14rem;
 }
 </style>
