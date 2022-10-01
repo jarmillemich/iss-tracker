@@ -54,7 +54,7 @@ onMounted(() => {
 
 const loader = new GLTFLoader();
 let dl = new DRACOLoader
-dl.setDecoderPath('/assets/draco/');
+dl.setDecoderPath('/iss-tracker/assets/draco/');
 dl.preload();
 loader.setDRACOLoader(dl)
 let light = new DirectionalLight(0xffffff, 2)
@@ -77,8 +77,8 @@ async function main() {
   ] = await Promise.all([
     // loader.loadAsync('ISS_stationary_lo.glb'),
     // loader.loadAsync('Earth_1_12756.glb'),
-     loader.loadAsync('/assets/models/ISS_stationary_lo.glb'),
-     loader.loadAsync('/assets/models/Earth_1_12756.glb'),
+     loader.loadAsync('/iss-tracker/assets/models/ISS_stationary_lo.glb'),
+     loader.loadAsync('/iss-tracker/assets/models/Earth_1_12756.glb'),
     
     // 25544 = ISS (Zarya)
     fetch('https://tle.ivanstanojevic.me/api/tle/25544').then(res => res.json())
