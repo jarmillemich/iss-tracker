@@ -1,7 +1,6 @@
 <template>
     <div class="header">
-      <!-- <hamburger></hamburger> -->
-      <h3>hamburger</h3>
+      <hamburger></hamburger>
       <h1>Just The Ducks</h1>
       <!-- <img src="/public/icons/earth.ico"/> -->
       
@@ -26,7 +25,7 @@
 </script>
 <style scoped lang="scss">
   .icon-padding{
-    padding: 10px;
+    padding-right: 10px;
   }
     .vis{
       visibility: hidden;
@@ -44,7 +43,7 @@
       width: 100%;
       height: 80px;
       background-color: black;
-      padding: 0px 20px;
+      padding-right: 20px;
     }
 
   @media (max-width: 767px) {

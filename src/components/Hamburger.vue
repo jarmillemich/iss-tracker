@@ -14,9 +14,9 @@
         </div>
       </div>
     </div>
-  </template>
+</template>
   
-  <script setup lang="ts">
+<script setup lang="ts">
   import { ref } from "vue";
   import HamburgerBar from "./HamburgerBar.vue";
   
@@ -27,75 +27,72 @@
   function updateMenu(childMenuUpdate: Boolean) {
     childMenu.value = !childMenuUpdate;
   }
-  </script>
+</script>
   
-  <style lang="scss">
-  .burger-header {
-    min-height: 50px;
-  }
-  .burger-container {
-    padding: 30px 40px;
-    position: absolute;
-    z-index: 30;
-  }
-  .navigation {
-    display: flex;
-    justify-content: flex-start;
-    width: 100%;
-    min-height: 125px;
-    height: 125px;
-  }
-  .navbar {
-    position: fixed;
-    display: flex;
-    overflow: hidden;
-    justify-content: center;
-    height: 100%;
-    background: black;
-    width: 70%;
-    opacity: 85%;
-    margin-right: -600px;
-    z-index: 5;
-    transition: margin 0.5s ease-in-out;
-  }
-  @media (min-width: 320px) and (max-width: 767px) {
+<style lang="scss">
+    .burger-header {
+        min-height: 50px;
+        min-width: 35px;
+    }
+    .burger-container {
+        padding: 45px 20px;
+        position: absolute;
+        z-index: 30;
+    }
+    .navigation {
+        display: flex;
+        justify-content: flex-start;
+        //width: 100%;
+        min-height: 125px;
+        height: 125px;
+    }
+    .navbar {
+        top: 0;
+        position: fixed;
+        display: flex;
+        overflow: hidden;
+        justify-content: flex-start;
+        height: 100%;
+        background: black;
+        width: 26%;
+        opacity: 85%;
+        margin-left: -600px;
+        z-index: 5;
+        transition: margin 0.5s ease-in-out;
+    }
     .nav-display {
       .burger-container {
         position: fixed;
       }
       .navbar {
-        margin-right: 0px;
+        margin-left: 0px;
       }
     }
-    // .navigation {
-    //   display: flex;
-    //   justify-content: flex-end;
-    //   width: 100%;
-    //   min-height: 125px;
-    //   height: 125px;
-    // }
     .nav-items {
-      height: fit-content;
-      width: 200px;
-      position: relative;
-      top: 200px;
-      color: white;
-      li {
-        a {
-          color: white;
-          text-decoration: none;
+        position: relative;
+        bottom: 100px;
+        color: #93CDDD;
+        li {
+            padding: 15px 0px;
         }
-        padding: 15px 0px;
-      }
     }
-    .burger-header {
-      display: flex;
-      justify-content: flex-end;
-      // align-items: center;
-      z-index: 10;
-      min-height: max-content;
-      width: 100%;
+
+    @media (min-width: 320px) and (max-width: 767px) {
+        .nav-display {
+            .burger-container {
+                position: fixed;
+            }
+            .navbar {
+                margin-right: 0px;
+            }
+        }
+        .burger-header {
+        justify-content: flex-end;
+        // align-items: center;
+        z-index: 10;
+        min-height: max-content;
+        width: 100%;
+        }
     }
-  }
-  </style>
+</style>
   

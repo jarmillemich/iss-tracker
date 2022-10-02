@@ -14,13 +14,13 @@
   .burger {
     cursor: pointer;
     transition: 0.5s ease;
-    height: 50px;
+    //height: 50px;
     &:hover .bar {
       box-shadow: 1px 1px 7px 1px RGBa(0, 0, 0, 0.3);
     }
     .bar {
-      width: 55px;
-      height: 10px;
+      width: 40px;
+      height: 5px;
       background: #93CDDD;
       box-shadow: 1px 1px 3px RGBa(0, 0, 0, 0.4);
       border-radius: 2px;
@@ -44,7 +44,7 @@
         opacity: 0;
       }
       &:nth-child(3) {
-        margin-top: -30px;
+        margin-top: -20px;
         transform: rotate(45deg);
       }
     }
