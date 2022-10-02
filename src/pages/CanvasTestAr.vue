@@ -1,6 +1,9 @@
 <template>
-  <pre ref="out"></pre>
-  <canvas ref="canvas"></canvas>
+  <section class="w-100 h-100 d-flex align-items-center">
+    <pre ref="out"></pre>
+    <button v-if="!started" class="btn btn-primary mx-auto p-3" @click="startSim">Get started</button>
+    <canvas v-else ref="canvas"></canvas>
+  </section>
 </template>
 
 <script lang="ts" setup>
@@ -8,11 +11,12 @@ import {
 AmbientLight, Group, PerspectiveCamera, PointLight, Scene, Vector3, WebGLRenderer
 } from 'three'
 import { getSatelliteInfo } from 'tle.js'
-import { onMounted, onUnmounted, ref } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref } from 'vue'
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { useXrUtility } from './useXrUtility'
 
 // Model loader
 const loader = new GLTFLoader();
@@ -29,26 +33,49 @@ let out = ref<HTMLElement | null>()
 let animationSpeed = ref(100)
 
 // Scene elements/rendering objects
-var scene = new Scene();
-var camera = new PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 1, 1000000 );
-var renderer = new WebGLRenderer();
-let ctrls = new OrbitControls(camera, renderer.domElement)
+let scene = new Scene();
+let camera = new PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 1, 1000000 );
+let ctrls: OrbitControls
 let system: Group, station: Group, planet: Group
-
-// Add some ambient light so the dark side of the planet is somewhat visible
-// TODO have a separate texture of "night earth" with lights
-let ambientLight = new AmbientLight(0xffffff, 0.5)
-scene.add(ambientLight)
-
-onMounted(() => {
-  // Place our renderer where our canvas was and save a reference
-  canvas.value?.replaceWith(renderer.domElement)
-  canvas.value = renderer.domElement
-})
+let renderer: WebGLRenderer
 
 let issTle: string
 
 async function main() {
+  if (!canvas.value) {
+    throw new Error('Missing canvas on startup')
+  }
+  
+  // Set up XR
+  let { checkSupport, startSession } = useXrUtility(canvas.value)
+
+  if (!await checkSupport()) {
+    // No XR for us :(
+      throw new Error('No XR')
+  }
+
+  let { ctx, refSpace, session } = await startSession()
+  
+  renderer = new WebGLRenderer({
+    antialias: true,
+    alpha: true,
+    context: ctx,
+    canvas: canvas.value
+  });
+
+  renderer.setClearColor(0x224488, 0.1)
+  renderer.xr.enabled = true
+  renderer.xr.setReferenceSpaceType('local')
+  renderer.xr.setSession(session)
+  onResize()
+  
+  ctrls = new OrbitControls(camera, renderer.domElement)
+
+  // Add some ambient light so the dark side of the planet is somewhat visible
+  // TODO have a separate texture of "night earth" with lights
+  let ambientLight = new AmbientLight(0xffffff, 0.5)
+  scene.add(ambientLight)
+
   let tleData: any
   
   // Retrieve our models and TLE data
@@ -90,41 +117,55 @@ async function main() {
   scene.add(system)
   system.attach(station)
   system.attach(planet)
+
+  camera.position.z = 9000;
+  ctrls.update()
+
+  function animate() {
+    if (halted) return
+    session.requestAnimationFrame( animate );
+
+
+    if (station) {
+      // Modify time based on when we arrived and animationSpeed
+      let when = start + (new Date().getTime() - start) * animationSpeed.value
+      setWhen(when)
+    }
+
+    if (!session.renderState.baseLayer) throw new Error('Failed to get XR buffer')
+
+    ctx.bindFramebuffer(ctx.FRAMEBUFFER, session.renderState.baseLayer.framebuffer)
+    renderer.render( scene, camera );
+
+    console.log(camera.position)
+  };
+
+  session.requestAnimationFrame(animate)
   
 }
 
-main().catch(err => {
-  console.error('Failed in main', err)
-})
+let started = ref(false)
+
+async function startSim() {
+  try {
+    started.value = true
+    await nextTick()
+    main()
+  } catch (e) {
+    console.error('Failed in main', e)
+  }
+}
 
 // Create a light source to represent the sun
 let fakeSun = new PointLight(0xffffff, 1.5, 1e9)
 fakeSun.position.z = 2000000;
 scene.add(fakeSun)
 
-
-camera.position.z = 9000;
-ctrls.update()
-
 let start = new Date().getTime()
 
 // Main render loop
 let halted = false
-function animate() {
-  if (halted) return
-	requestAnimationFrame( animate );
 
-
-  if (station) {
-    // Modify time based on when we arrived and animationSpeed
-    let when = start + (new Date().getTime() - start) * animationSpeed.value
-    setWhen(when)
-  }
-
-	renderer.render( scene, camera );
-};
-
-animate();
 // Stop the simulation if we e.g. navigate away
 onUnmounted(() => halted = true)
 
@@ -164,7 +205,7 @@ function getTleXyz(tle: string, when: number): Vector3 {
 
 // Maintains the renderer parameters when we resize the window
 function onResize() {
-  if (canvas.value) {
+  if (canvas.value && renderer) {
     canvas.value.width = innerWidth
     canvas.value.height = innerHeight
     renderer.setSize(canvas.value.width, canvas.value.height)
@@ -173,7 +214,6 @@ function onResize() {
     
   }
 }
-onMounted(onResize)
 
 onMounted(() => addEventListener('resize', onResize))
 onUnmounted(() => removeEventListener('resize', onResize))

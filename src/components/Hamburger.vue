@@ -29,7 +29,7 @@
   }
 </script>
   
-<style lang="scss">
+<style scoped lang="scss">
     .burger-header {
         min-height: 50px;
         min-width: 35px;
@@ -59,6 +59,7 @@
         margin-left: -600px;
         z-index: 5;
         transition: margin 0.5s ease-in-out;
+        border-right: 3px solid #93CDDD;
     }
     .nav-display {
       .burger-container {
@@ -78,20 +79,12 @@
     }
 
     @media (min-width: 320px) and (max-width: 767px) {
-        .nav-display {
-            .burger-container {
-                position: fixed;
-            }
-            .navbar {
-                margin-right: 0px;
-            }
-        }
         .burger-header {
-        justify-content: flex-end;
-        // align-items: center;
-        z-index: 10;
-        min-height: max-content;
-        width: 100%;
+            justify-content: flex-end;
+            // align-items: center;
+            z-index: 10;
+            min-height: max-content;
+            width: 100%;
         }
     }
 </style>
