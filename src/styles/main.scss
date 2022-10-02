@@ -5,7 +5,7 @@
     padding: 0;
 }
 
-h1, h2, h3 {
+h1, h2, h3, h4 {
     margin-top: 0;
     margin-bottom: 0;
 }
@@ -36,10 +36,11 @@ h1 {
 
 h2{
     font-family: Dosis;
-    font-size: 64px;
+    font-size: 36px;
     font-weight: 300;
     line-height: 70px;
     color: black;  
+    font-weight: bold;
 }
 
 h3 {
@@ -92,10 +93,25 @@ li {
         font-size: 22px; 
         text-decoration: underline;
     }
+
+    h4{
+        font-family: Dosis;
+        font-size: 22px;
+        font-weight: 400;
+        line-height: 37px;
+        font-weight: bold;
+    }
 }
 
 @media (max-width: 767px) {
     h1 {
+        font-family: Dosis;
+        font-size: 22px;
+        font-weight: 400;
+        line-height: 37px;
+    }
+
+    h2 {
         font-family: Dosis;
         font-size: 22px;
         font-weight: 400;

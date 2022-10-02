@@ -1,0 +1,110 @@
+{
+    "sections": {
+        "About Us": {
+            "text": "Just the Ducks is a group of 6 coders by day and NASA enthusiasts by night. Our group was formed while seeking unique coding experiences outside of our normal work environment. We spend our days building and supporting information systems for a mild mannered insurance company in Flint, Michigan. By night we challenge ourselves with coding and camaraderie. We joined the 2022 NASA Space Apps challenge with the goal of expanding our skills and experiencing NASA to the fullest.",
+            "features": {
+                "initial": [],
+                "planned": [
+                    {
+                        "header": "",
+                        "text": ""
+                    },
+                    {
+                        "header": "",
+                        "text": ""
+                    },
+                    {
+                        "header": "",
+                        "text": ""
+                    },
+                    {
+                        "header": "",
+                        "text": ""
+                    }
+                ]
+            }
+        },
+        "“A Window to the ISS (International Space Station)”": {
+            "text": "Our initial product seeks to provide a unique educational experience through the use of web based 3D and mobile technologies to expand awareness of the ISS. Our proof of concept tackles the challenges of efficient and effective 3D modeling on the web.",
+            "features": {
+                "initial": [
+                    {
+                        "header": "",
+                        "text": ""
+                    },
+                    {
+                        "header": "",
+                        "text": ""
+                    },
+                    {
+                        "header": "",
+                        "text": ""
+                    },
+                    {
+                        "header": "",
+                        "text": ""
+                    }
+                ],
+                "planned": [
+                    {
+                        "header": "",
+                        "text": ""
+                    },
+                    {
+                        "header": "",
+                        "text": ""
+                    },
+                    {
+                        "header": "",
+                        "text": ""
+                    },
+                    {
+                        "header": "",
+                        "text": ""
+                    }
+                ]
+            }
+        },
+        "Something Else": {
+            "text": "Hello there",
+            "features": {
+                "initial": [
+                    {
+                        "header": "",
+                        "text": ""
+                    },
+                    {
+                        "header": "",
+                        "text": ""
+                    },
+                    {
+                        "header": "",
+                        "text": ""
+                    },
+                    {
+                        "header": "",
+                        "text": ""
+                    }
+                ],
+                "planned": [
+                    {
+                        "header": "",
+                        "text": ""
+                    },
+                    {
+                        "header": "",
+                        "text": ""
+                    },
+                    {
+                        "header": "",
+                        "text": ""
+                    },
+                    {
+                        "header": "",
+                        "text": ""
+                    }
+                ]
+            }
+        }
+    }
+}

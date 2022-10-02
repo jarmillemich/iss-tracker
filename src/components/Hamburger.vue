@@ -59,6 +59,7 @@
         margin-left: -600px;
         z-index: 5;
         transition: margin 0.5s ease-in-out;
+        border-right: 3px solid #93CDDD;
     }
     .nav-display {
       .burger-container {
