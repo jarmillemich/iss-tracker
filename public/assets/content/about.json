@@ -52,5 +52,47 @@
                 ]
             }
         }
+    },
+    "Tools": {
+        "IDE:": [{
+            "name": "VSCode"
+        }],
+        "Frameworks:": [
+            {
+                "name": "Node.js"
+            },
+            {
+                "name": "Three.js"
+            },
+            {
+                "name": "WebXR"
+            },
+            {
+                "name": "TypeScript"
+            },
+            {
+                "name": "JavaScrip"
+            },
+            {
+                "name": "HTML"
+            },
+            {
+                "name": "CSS"
+            },
+            {
+                "name": "SCSS"
+            }
+        ],
+        "Tools:": [
+            {
+                "name": "Figma - Prototyping"
+            },
+            {
+                "name": "Adobe Photoshop - Image Editing"
+            },
+            {
+                "name": "GitHub - Code Version Control and Hosting"
+            }
+        ]
     }
 }
