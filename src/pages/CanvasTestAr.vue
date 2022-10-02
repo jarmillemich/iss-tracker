@@ -1,6 +1,6 @@
 <template>
   <section class="w-100 h-100 d-flex align-items-center">
-    <pre ref="out"></pre>
+    <!-- <pre ref="out"></pre> -->
     <button v-if="!started" class="btn btn-primary mx-auto p-3" @click="startSim">Get started</button>
     <canvas v-else ref="canvas"></canvas>
   </section>
@@ -8,7 +8,7 @@
 
 <script lang="ts" setup>
 import {
-AmbientLight, Group, PerspectiveCamera, PointLight, Scene, Vector3, WebGLRenderer
+AmbientLight, Group, PerspectiveCamera, PointLight, Scene, Vector3, WebGLRenderer, ArrowHelper, Box3
 } from 'three'
 import { getSatelliteInfo } from 'tle.js'
 import { nextTick, onMounted, onUnmounted, ref } from 'vue'
@@ -27,17 +27,18 @@ loader.setDRACOLoader(dl)
 
 // DOM references
 let canvas = ref<HTMLCanvasElement | null>();
-let out = ref<HTMLElement | null>()
+// let out = ref<HTMLElement | null>()
 
 // Control values
 let animationSpeed = ref(100)
 
 // Scene elements/rendering objects
 let scene = new Scene();
-let camera = new PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 1, 1000000 );
+let camera = new PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.01, 1000000 );
 let ctrls: OrbitControls
 let system: Group, station: Group, planet: Group
 let renderer: WebGLRenderer
+let arrow: ArrowHelper
 
 let issTle: string
 
@@ -111,12 +112,24 @@ async function main() {
   system.rotateX(23.5 * Math.PI / 180)
   
   // Scale the ISS so it is visible, but not intersecting the planet
-  station.scale.set(5, 5, 5)
+  station.scale.set(20, 20, 20)
   
   // Link the scene together
   scene.add(system)
   system.attach(station)
   system.attach(planet)
+
+  // Set up our pointer
+  arrow = new ArrowHelper(new Vector3(2, 0, 0), new Vector3(0, 0, 0), 0.1, 0xff0000);
+  let al = 0.1
+  arrow.setLength(al, al*0.5, al*0.2);
+  (window as any).arrow = arrow
+  //camera.attach(arrow)
+  //arrow.position.set(0, 0, 1)
+  scene.add(arrow)
+  let box = new Box3()
+  box.setFromObject(arrow)
+  console.log(box)
 
   camera.position.z = 9000;
   ctrls.update()
@@ -130,6 +143,18 @@ async function main() {
       // Modify time based on when we arrived and animationSpeed
       let when = start + (new Date().getTime() - start) * animationSpeed.value
       setWhen(when)
+
+      let cameraPos = new Vector3()
+      let cameraDir = new Vector3()
+      camera.getWorldPosition(cameraPos)
+      camera.getWorldDirection(cameraDir)
+      arrow.position.copy(cameraPos.add(cameraDir))
+      
+      let worldPos = new Vector3()
+      station.getWorldPosition(worldPos)
+      arrow.setDirection(worldPos.normalize())
+
+      
     }
 
     if (!session.renderState.baseLayer) throw new Error('Failed to get XR buffer')
@@ -137,7 +162,6 @@ async function main() {
     ctx.bindFramebuffer(ctx.FRAMEBUFFER, session.renderState.baseLayer.framebuffer)
     renderer.render( scene, camera );
 
-    console.log(camera.position)
   };
 
   session.requestAnimationFrame(animate)
