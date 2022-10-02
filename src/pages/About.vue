@@ -1,5 +1,4 @@
 <template>
-    <!-- <Header></Header> -->
     <p>about</p>
 </template>
   

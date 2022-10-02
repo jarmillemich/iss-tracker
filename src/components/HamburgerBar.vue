@@ -10,7 +10,7 @@
   const props = defineProps({ isActivated: Boolean });
   </script>
   
-  <style lang="scss">
+  <style scoped lang="scss">
   .burger {
     cursor: pointer;
     transition: 0.5s ease;
