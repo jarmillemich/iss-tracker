@@ -4,69 +4,56 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue'
 import {
-  Scene,
-  Mesh,
-  MeshBasicMaterial,
-  WebGLRenderer,
-  PerspectiveCamera,
-  BoxGeometry,
-  Group,
-  Box3,
-  PointLight,
-  SpotLight,
-  DirectionalLight,
-  MeshPhongMaterial,
-  AmbientLight,
-  SphereGeometry,
-  Vector3,
+AmbientLight, Group, PerspectiveCamera, PointLight, Scene, Vector3, WebGLRenderer
 } from 'three'
 import { getSatelliteInfo } from 'tle.js'
+import { onMounted, onUnmounted, ref } from 'vue'
 
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 
-
-let canvas = ref<HTMLCanvasElement | null>();
-let out = ref<HTMLElement | null>()
-
-var scene = new Scene();
-var camera = new PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 1, 1000000 );
-
-var renderer = new WebGLRenderer();
-watch(() => canvas.value, () => canvas.value && (renderer.domElement = canvas.value))
-renderer.setSize( window.innerWidth, window.innerHeight );
-let ctrls = new OrbitControls(camera, renderer.domElement)
-onMounted(() => {
-  console.log(canvas.value)
-  canvas.value?.replaceWith(renderer.domElement)
-  canvas.value = renderer.domElement
-})
-
-//const loader = new GLTFLoader();
-
+// Model loader
 const loader = new GLTFLoader();
 let dl = new DRACOLoader
 dl.setDecoderPath('/iss-tracker/assets/draco/');
 dl.preload();
 loader.setDRACOLoader(dl)
-let light = new DirectionalLight(0xffffff, 2)
 
-//scene.add(light)
-//camera.add(light)
-light.position.set(10000, 10000, 10000)
-light.lookAt(0, 0, 0)
+// DOM references
+let canvas = ref<HTMLCanvasElement | null>();
+let out = ref<HTMLElement | null>()
 
-let system: Group, ship: Group, planet: Group
+// Control values
+let animationSpeed = ref(100)
+
+// Scene elements/rendering objects
+var scene = new Scene();
+var camera = new PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 1, 1000000 );
+var renderer = new WebGLRenderer();
+let ctrls = new OrbitControls(camera, renderer.domElement)
+let system: Group, station: Group, planet: Group
+
+// Add some ambient light so the dark side of the planet is somewhat visible
+// TODO have a separate texture of "night earth" with lights
+let ambientLight = new AmbientLight(0xffffff, 0.5)
+scene.add(ambientLight)
+
+onMounted(() => {
+  // Place our renderer where our canvas was and save a reference
+  canvas.value?.replaceWith(renderer.domElement)
+  canvas.value = renderer.domElement
+})
+
 let issTle: string
 
 async function main() {
   let tleData: any
   
+  // Retrieve our models and TLE data
   [
-    { scene: ship },
+    { scene: station },
     { scene: planet },
     tleData
   ] = await Promise.all([
@@ -79,101 +66,105 @@ async function main() {
     fetch('https://tle.ivanstanojevic.me/api/tle/25544').then(res => res.json())
   ])
 
-  let whatLight = new AmbientLight(0xffffff, 0.5)
-  scene.add(whatLight)
+  // Store the TLE in it's textual format
+  issTle = `${tleData.name}\n${tleData.line1}\n${tleData.line2}`
 
-  system = new Group()
-
-  //ship.scale.set(5, 5, 5)
-  //ship.position(new Vector3(planet.position.x, planet.position.y, planet.position.z))
-  //scene.add(ship)
-  //planet.attach(ship);
-  ship.scale.set(5, 5, 5)
-  //planet.attach(whatLight);
-  //planet.add(ship)
-  scene.add(system)
-  system.attach(ship)
-  system.attach(planet)
-
-  // Earth = 12,742 km diameter, model = 1000 km diameter
+  // Earth = 12,742 km diameter, model = 1,000 unit diameter
+  // Scale so 1 unit = 1 km
   let scale = 12_742 / 1_000
-  system.rotateX(23.5 * Math.PI / 180)
   planet.scale.set(scale, scale, scale)
 
-  issTle = `${tleData.name}\n${tleData.line1}\n${tleData.line2}`
+  // "system" is a rotating Earth reference frame
+  // NB planet is not the root of the reference frame as it has a scale
+  system = new Group()
+
+  // Apply axial tilt
+  // NB this applies to both the planet and the station as we have planet based lat/lon
+  // TODO position the "sun" light appropriate to the time of year
+  system.rotateX(23.5 * Math.PI / 180)
+  
+  // Scale the ISS so it is visible, but not intersecting the planet
+  station.scale.set(5, 5, 5)
+  
+  // Link the scene together
+  scene.add(system)
+  system.attach(station)
+  system.attach(planet)
+  
 }
 
 main().catch(err => {
   console.error('Failed in main', err)
 })
 
-let fakePlanet = new SphereGeometry(12_742, 20, 20)
-let planetMat = new MeshPhongMaterial({ color: 0x93dccc })
-let fakePlanetNode = new Mesh(fakePlanet, planetMat)
+// Create a light source to represent the sun
 let fakeSun = new PointLight(0xffffff, 1.5, 1e9)
 fakeSun.position.z = 2000000;
 scene.add(fakeSun)
-//scene.add(fakePlanetNode)
+
 
 camera.position.z = -9000;
 ctrls.update()
 
 let start = new Date().getTime()
 
-let animate = function () {
+// Main render loop
+let halted = false
+function animate() {
+  if (halted) return
 	requestAnimationFrame( animate );
 
-  light.lookAt(0, 0, 0)
 
-  if (ship) {
-    ship.rotation.x += 0.001;
-    ship.rotation.y += 0.001;
-    //system.rotation.y += 0.01;
-
-    let when = start + (new Date().getTime() - start) * 100
-
+  if (station) {
+    // Modify time based on when we arrived and animationSpeed
+    let when = start + (new Date().getTime() - start) * animationSpeed.value
     setWhen(when)
-    
-
   }
 
 	renderer.render( scene, camera );
 };
 
-function setWhen(when: number) {
-  ship.position.copy(getTleXyz(issTle, when))
+animate();
+// Stop the simulation if we e.g. navigate away
+onUnmounted(() => halted = true)
 
-  // Get planet rotation based on time
+/** Sets the simulation to the specified time */
+function setWhen(when: number) {
+  // Move the station
+  station.position.copy(getTleXyz(issTle, when))
+
+  // Set planet rotation
   let asDate = new Date(when)
   let hours = asDate.getUTCHours() + asDate.getUTCMinutes() / 60 + asDate.getUTCSeconds() / 3600
   system.rotation.y = hours / 24 * 2 * Math.PI
 }
 
+/** Given a TLE and a timestamp, project the position to a spherical approximation in R3 */
 function getTleXyz(tle: string, when: number): Vector3 {
-
   let info = getSatelliteInfo(tle,
     when,
+    // TODO retrieve the user's location
     -83,
     42,
     800
   )
 
+  // Convert to radians
   let lat = info.lat * Math.PI / 180
   let lon = info.lng * Math.PI / 180
 
+  // Convert to R3
   return new Vector3(
-    (12742/2 + info.height) * -Math.sin(lon) * Math.cos(lat),
-    (12742/2 + info.height) * Math.sin(lat),
-    (12742/2 + info.height) * -Math.cos(lon) * Math.cos(lat),
+    (12_742/2 + info.height) * -Math.sin(lon) * Math.cos(lat),
+    (12_742/2 + info.height) * Math.sin(lat),
+    (12_742/2 + info.height) * -Math.cos(lon) * Math.cos(lat),
   )
 }
 
-animate();
 
-// Sizing things
+// Maintains the renderer parameters when we resize the window
 function onResize() {
   if (canvas.value) {
-    console.log(canvas.value)
     canvas.value.width = innerWidth
     canvas.value.height = innerHeight
     renderer.setSize(canvas.value.width, canvas.value.height)
@@ -182,15 +173,7 @@ function onResize() {
     
   }
 }
-onResize()
-
-addEventListener('wheel', (evt: WheelEvent) => {
-  if (evt.deltaY > 0) {
-    camera.position.z *= 1.1
-  } else if (evt.deltaY < 0) {
-    camera.position.z /= 1.1
-  }
-})
+onMounted(onResize)
 
 onMounted(() => addEventListener('resize', onResize))
 onUnmounted(() => removeEventListener('resize', onResize))
