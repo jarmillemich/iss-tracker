@@ -59,6 +59,9 @@
         }],
         "Frameworks:": [
             {
+                "name": "Vue.js"
+            },
+            {
                 "name": "Node.js"
             },
             {
@@ -88,10 +91,13 @@
                 "name": "Figma - Prototyping"
             },
             {
-                "name": "Adobe Photoshop - Image Editing"
+                "name": "Blender - 3D Modelling"
             },
             {
                 "name": "GitHub - Code Version Control and Hosting"
+            },
+            {
+                "name": "OBS - Video Editing"
             }
         ]
     }
