@@ -6,15 +6,15 @@
                     <h2>{{ key }}</h2>
                     <div class="content">
                         <p>{{value.text}}</p>
-                        <h4 v-if="value">Initial Features</h4>
-                        <div class="initial-features" v-for="feature in value.features.initial">
-                            {{ feature.header }}
-                            {{feature.text}}
+                        <h4 v-if="value.features.initial.length">Initial Features</h4>
+                        <div class="features" v-for="feature in value.features.initial">
+                            <h5>{{ feature.header }}</h5>
+                            <p>{{feature.text}}</p>
                         </div>
-                        <h4>Planned Features</h4>
-                        <div class="planned-features" v-for="feature in value.features.planned">
-                            {{ feature.header }}
-                            {{feature.text}}
+                        <h4 v-if="value.features.planned.length">Planned Features</h4>
+                        <div class="features" v-for="feature in value.features.planned">
+                            <h5>{{ feature.header }}</h5>
+                            <p>{{feature.text}}</p>
                         </div>
                     </div>
                     <div v-if="index != objectLength()" class="border-bottom">
@@ -65,6 +65,17 @@
         row-gap: 75px;
         margin-top: 35px;
         margin-bottom: 200px;
+    }
+
+    .features{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 30px, 0px;
+        h5{
+            margin-top: 15px;
+            margin-bottom: 15px;    
+        }
     }
 
     .border-line {
