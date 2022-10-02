@@ -8,6 +8,7 @@
           <div class="nav-items">
             <ul>
               <li><router-link to="/">Home</router-link></li>
+              <li><router-link to="/cta">ARCanvas</router-link></li>
               <li><router-link to="/about">About</router-link></li>
             </ul>
           </div>
