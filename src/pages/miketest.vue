@@ -25,9 +25,9 @@ import {
   AmbientLight,
   SphereGeometry,
   Vector3,
+Matrix3,
 } from 'three'
-import { getSatelliteInfo } from 'tle.js'
-
+import { getSatelliteInfo,getGroundTracks, type LngLat, type ThreeGroundTracks } from 'tle.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
@@ -36,11 +36,16 @@ let info = getSatelliteInfo(`ISS (ZARYA)
 1 25544U 98067A   22274.46188292  .00014869  00000+0  26380-3 0  9996
 2 25544  51.6447 170.0519 0002623 316.7478 215.0466 15.50450812361668`, new Date().getTime(), -83, 42, 800)
 
-console.log(info)
+//console.log(info)
 
 let canvas = ref<HTMLCanvasElement | null>();
 let out = ref<HTMLElement | null>()
-let line = new Line();
+let PastLine = new Line();
+let FutureLine = new Line();
+let drawCount: number = 0
+let FuturedrawCount: number = 0
+//tracer
+let MAX_POINTS: number = 500
 var scene = new Scene();
 var camera = new PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 1, 1000000 );
 
@@ -49,7 +54,7 @@ watch(() => canvas.value, () => canvas.value && (renderer.domElement = canvas.va
 renderer.setSize( window.innerWidth, window.innerHeight );
 let ctrls = new OrbitControls(camera, renderer.domElement)
 onMounted(() => {
-  console.log(canvas.value)
+  //console.log(canvas.value)
   canvas.value?.replaceWith(renderer.domElement)
   canvas.value = renderer.domElement
 })
@@ -79,11 +84,8 @@ async function main() {
     { scene: planet },
     tleData
   ] = await Promise.all([
-    // loader.loadAsync('ISS_stationary_lo.glb'),
-    // loader.loadAsync('Earth_1_12756.glb'),
      loader.loadAsync('/assets/models/ISS_stationary_lo.glb'),
-     loader.loadAsync('/assets/models/Earth_1_12756.glb'),
-    
+     loader.loadAsync('/assets/models/Earth_1_12756.glb'),    
     // 25544 = ISS (Zarya)
     fetch('https://tle.ivanstanojevic.me/api/tle/25544').then(res => res.json())
   ])
@@ -92,16 +94,11 @@ async function main() {
   scene.add(whatLight)
 
   system = new Group()
+  tracer(MAX_POINTS)
 
-  //ship.scale.set(5, 5, 5)
-  //ship.position(new Vector3(planet.position.x, planet.position.y, planet.position.z))
-  //scene.add(ship)
-  //planet.attach(ship);
   ship.scale.set(5, 5, 5)
-  //planet.attach(whatLight);
-  //planet.add(ship)
   scene.add(system)
-  //system.attach(ship)
+  system.attach(ship)
   system.attach(planet)
   // Earth = 12,742 km diameter, model = 1000 km diameter
   let scale = 12742/1000
@@ -119,12 +116,12 @@ let planetMat = new MeshPhongMaterial({ color: 0x93dccc })
 let fakePlanetNode = new Mesh(fakePlanet, planetMat)
 //scene.add(fakePlanetNode)
 
-camera.position.z = -9000;
+camera.position.z = 9000;
 ctrls.update()
 
 let start = new Date().getTime()
 
-var animate = function () {
+var animate = async function () {
 	requestAnimationFrame( animate );
 
   light.lookAt(0, 0, 0)
@@ -134,7 +131,7 @@ var animate = function () {
     ship.rotation.y += 0.001;
     system.rotation.y += 0.01;
 
-    let when = start + (new Date().getTime() - start) * 100
+    let when = start + (new Date().getTime() - start) * MAX_POINTS / 2
 
     
 
@@ -142,29 +139,27 @@ var animate = function () {
 
 
     ship.position.copy(getTleXyz(issTle, when))
-
-
-    //tracer
-    let MAX_POINTS: number = 500
-
-    let drawCount: number = 0
+  
+    PastLine.geometry.setDrawRange( 0, drawCount );
+    PastLine.geometry.attributes.position.setXYZ(drawCount,ship.position.x,ship.position.y,ship.position.z);
     drawCount = ( drawCount + 1 ) % MAX_POINTS;
-    tracer(MAX_POINTS , when);
-	line.geometry.setDrawRange( 0, drawCount );
-  //console.info(drawCount)
-	if ( drawCount === 0 || drawCount === 1  ) {
-    //console.info("AFter If")
-		// periodically, generate new data
 
-		updateTracerPosition(MAX_POINTS, when);
+    
 
-		line.geometry.attributes.position.needsUpdate = true; // required after the first render
-    //line.material[0].color = 0x93dccc;
-
-		// line.material.color.setHSL( Math.random(), 1, 0.5 );
-
-	}
-
+    //Future Line
+    FutureLine.geometry.setDrawRange( 0, FuturedrawCount );
+    
+    let FutureLineposition: Vector3 = getTleXyz(issTle, when+380000);
+    if(FuturedrawCount === 0){
+      FutureLine.geometry.attributes.position.setXYZ(FuturedrawCount,ship.position.x,ship.position.y,ship.position.z);
+    }
+   else{
+      FutureLine.geometry.attributes.position.setXYZ(FuturedrawCount,FutureLineposition.x,FutureLineposition.y,FutureLineposition.z);
+    }
+    FuturedrawCount = ( FuturedrawCount + 1 ) % 500;
+    
+      PastLine.geometry.attributes.position.needsUpdate = true; // required after the first render
+      FutureLine.geometry.attributes.position.needsUpdate = true; // required after the first render
   }
 
 	renderer.render( scene, camera );
@@ -178,9 +173,12 @@ function getTleXyz(tle: string, when: number): Vector3 {
     42,
     800
   )
+return calcVector(info.lat, info.lng)
 
-  let lat = info.lat * Math.PI / 180
-  let lon = info.lng * Math.PI / 180
+}
+function calcVector(_lat: number, _lon: number): Vector3{
+  let lat = _lat * Math.PI / 180
+  let lon = _lon * Math.PI / 180
 
   return new Vector3(
     (12742/2 + info.height) * -Math.sin(lon) * Math.cos(lat),
@@ -188,7 +186,8 @@ function getTleXyz(tle: string, when: number): Vector3 {
     (12742/2 + info.height) * -Math.cos(lon) * Math.cos(lat),
   )
 }
-function tracer(MAX_POINTS: number, when: number){
+
+function tracer(MAX_POINTS: number){
 
   // geomtry
   let geometry = new BufferGeometry();
@@ -198,45 +197,31 @@ var positions = new Float32Array( MAX_POINTS * 3 ); // 3 vertices per point
 
 geometry.setAttribute( 'position', new BufferAttribute( positions, 3 ) );
 
-// draw range
-let drawCount : number = 2; // draw the first 2 points, only
-geometry.setDrawRange( 0, drawCount );
-
 // material
-var material = new LineBasicMaterial( { color: 0xffffff, linewidth: 20000 } );
+var material = new LineBasicMaterial( { color: 0xffffff, linewidth: 1 } );
 material.color.setHex(0xFF0000)
+
 // line
-line = new Line( geometry,  material );
-scene.add( line );
+PastLine = new Line( geometry,  material );
+system.attach( PastLine );
 
-updateTracerPosition(MAX_POINTS, when);
-}
+// geomtry
+  let Futuregeometry = new BufferGeometry();
 
-function updateTracerPosition(MaxPoint: number, when: number){
+ // attributes
+var Futurepositions = new Float32Array( MAX_POINTS * 3 ); // 3 vertices per point
 
-let x: number = 0;
-let y: number = 0;
-let z: number = 0;
-let index: number = 0; 
-console.log("BeforeFor")
-let TleVector: Vector3 = getTleXyz(issTle, when)
-console.log("X: " + TleVector.x + " Y: " + TleVector.y + " Z: " + TleVector.z)
- line.geometry.attributes.position.positions.setXYZ(index,TleVector.x, TleVector.y,TleVector.z);
+Futuregeometry.setAttribute( 'position', new BufferAttribute( Futurepositions, 3 ) );
+// line
+var Futurematerial = new LineBasicMaterial( { color: 0xffffff, linewidth: 1 } );
+Futurematerial.color.setHex(0xFFFFFF)
 
- var positions = line.geometry.attributes.position.array;
+FutureLine = new Line( Futuregeometry,  Futurematerial );
+system.attach( FutureLine );
 
- line.geometry.attributes.position.array[index].
-
-// for ( var i = 0, l = MaxPoint; i < l; i ++ ) {
-//   let TleVector: Vector3 = getTleXyz(issTle, when)
-//  // console.log("X: " + TleVector.x + " Y: " + TleVector.y + " Z: " + TleVector.z)
-//   line.geometry.attributes.positions.setXYZ(index,TleVector.x, TleVector.y,TleVector.z);
-//   index ++;
-// }
 }
 
 animate();
-
 // Sizing things
 function onResize() {
   if (canvas.value) {
