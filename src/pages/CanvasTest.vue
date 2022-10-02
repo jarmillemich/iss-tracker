@@ -28,11 +28,6 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 
-let info = getSatelliteInfo(`ISS (ZARYA)             
-1 25544U 98067A   22274.46188292  .00014869  00000+0  26380-3 0  9996
-2 25544  51.6447 170.0519 0002623 316.7478 215.0466 15.50450812361668`, new Date().getTime(), -83, 42, 800)
-
-console.log(info)
 
 let canvas = ref<HTMLCanvasElement | null>();
 let out = ref<HTMLElement | null>()
@@ -59,7 +54,7 @@ dl.preload();
 loader.setDRACOLoader(dl)
 let light = new DirectionalLight(0xffffff, 2)
 
-scene.add(light)
+//scene.add(light)
 //camera.add(light)
 light.position.set(10000, 10000, 10000)
 light.lookAt(0, 0, 0)
@@ -84,7 +79,7 @@ async function main() {
     fetch('https://tle.ivanstanojevic.me/api/tle/25544').then(res => res.json())
   ])
 
-  let whatLight = new AmbientLight(0xffffff, 1)
+  let whatLight = new AmbientLight(0xffffff, 0.5)
   scene.add(whatLight)
 
   system = new Group()
@@ -101,7 +96,8 @@ async function main() {
   system.attach(planet)
 
   // Earth = 12,742 km diameter, model = 1000 km diameter
-  let scale = 12742/1000
+  let scale = 12_742 / 1_000
+  system.rotateX(23.5 * Math.PI / 180)
   planet.scale.set(scale, scale, scale)
 
   issTle = `${tleData.name}\n${tleData.line1}\n${tleData.line2}`
@@ -111,9 +107,12 @@ main().catch(err => {
   console.error('Failed in main', err)
 })
 
-let fakePlanet = new SphereGeometry(12742, 20, 20)
+let fakePlanet = new SphereGeometry(12_742, 20, 20)
 let planetMat = new MeshPhongMaterial({ color: 0x93dccc })
 let fakePlanetNode = new Mesh(fakePlanet, planetMat)
+let fakeSun = new PointLight(0xffffff, 1.5, 1e9)
+fakeSun.position.z = 2000000;
+scene.add(fakeSun)
 //scene.add(fakePlanetNode)
 
 camera.position.z = -9000;
@@ -121,7 +120,7 @@ ctrls.update()
 
 let start = new Date().getTime()
 
-var animate = function () {
+let animate = function () {
 	requestAnimationFrame( animate );
 
   light.lookAt(0, 0, 0)
@@ -129,21 +128,26 @@ var animate = function () {
   if (ship) {
     ship.rotation.x += 0.001;
     ship.rotation.y += 0.001;
-    system.rotation.y += 0.01;
+    //system.rotation.y += 0.01;
 
     let when = start + (new Date().getTime() - start) * 100
 
+    setWhen(when)
     
-
-    if (out.value) out.value.innerText = JSON.stringify(info, null, 2)
-
-
-    ship.position.copy(getTleXyz(issTle, when))
 
   }
 
 	renderer.render( scene, camera );
 };
+
+function setWhen(when: number) {
+  ship.position.copy(getTleXyz(issTle, when))
+
+  // Get planet rotation based on time
+  let asDate = new Date(when)
+  let hours = asDate.getUTCHours() + asDate.getUTCMinutes() / 60 + asDate.getUTCSeconds() / 3600
+  system.rotation.y = hours / 24 * 2 * Math.PI
+}
 
 function getTleXyz(tle: string, when: number): Vector3 {
 
